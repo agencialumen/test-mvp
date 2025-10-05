@@ -1,12 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { headers } from "next/headers"
-import {
-  updateUserSubscription,
-  createTransaction,
-  processMLMCommissions,
-  getCreatorNetwork,
-} from "@/lib/firebase/firestore"
 import type Stripe from "stripe"
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
@@ -89,6 +83,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
+  const { updateUserSubscription } = await import("@/lib/firebase/firestore")
+
   // Update user subscription status
   await updateUserSubscription(userId, {
     tier,
@@ -111,6 +107,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     return
   }
 
+  const { updateUserSubscription } = await import("@/lib/firebase/firestore")
+
   await updateUserSubscription(userId, {
     tier,
     status: subscription.status as "active" | "canceled" | "past_due",
@@ -127,6 +125,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     console.error("[v0] Missing userId in subscription metadata")
     return
   }
+
+  const { updateUserSubscription } = await import("@/lib/firebase/firestore")
 
   await updateUserSubscription(userId, {
     tier: "bronze",
@@ -146,6 +146,8 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     console.error("[v0] Missing metadata in subscription")
     return
   }
+
+  const { createTransaction, processMLMCommissions, getCreatorNetwork } = await import("@/lib/firebase/firestore")
 
   const grossAmount = invoice.amount_paid / 100 // Convert from cents to currency
 
@@ -213,6 +215,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     console.error("[v0] Missing userId in subscription metadata")
     return
   }
+
+  const { updateUserSubscription } = await import("@/lib/firebase/firestore")
 
   // Update subscription status to past_due
   await updateUserSubscription(userId, {
