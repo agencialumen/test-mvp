@@ -3,18 +3,17 @@
 import { stripe } from "@/lib/stripe"
 import { getSubscriptionProduct } from "@/lib/stripe-products"
 
-// In production, this should use proper server-side token verification
 export async function createSubscriptionCheckout(
   userId: string,
   creatorId: string,
   tier: "prata" | "gold" | "platinum" | "diamante",
 ) {
   try {
+    console.log("[v0] Creating checkout - userId:", userId, "creatorId:", creatorId, "tier:", tier)
+
     if (!userId) {
       throw new Error("Usuário não autenticado")
     }
-
-    console.log("[v0] Creating checkout for user:", userId, "creator:", creatorId, "tier:", tier)
 
     // Get subscription product
     const product = getSubscriptionProduct(tier)
@@ -23,6 +22,9 @@ export async function createSubscriptionCheckout(
     }
 
     console.log("[v0] Product found:", product.name, "Price ID:", product.stripePriceId)
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    console.log("[v0] Using app URL:", appUrl)
 
     // Create Stripe checkout session for subscription
     const session = await stripe.checkout.sessions.create({
@@ -46,15 +48,26 @@ export async function createSubscriptionCheckout(
         creatorId,
         tier,
       },
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${appUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
     })
 
-    console.log("[v0] Checkout session created:", session.id)
+    console.log("[v0] Checkout session created successfully:", session.id)
 
-    return { clientSecret: session.client_secret, sessionId: session.id }
+    return {
+      clientSecret: session.client_secret,
+      sessionId: session.id,
+      success: true,
+    }
   } catch (error) {
     console.error("[v0] Error creating subscription checkout:", error)
-    throw error
+
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao criar checkout"
+    console.error("[v0] Error details:", errorMessage)
+
+    return {
+      success: false,
+      error: errorMessage,
+    }
   }
 }
 

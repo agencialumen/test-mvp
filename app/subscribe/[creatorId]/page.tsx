@@ -1,7 +1,6 @@
 "use client"
 
 import { SubscriptionCheckout } from "@/components/subscription-checkout"
-import { getCreatorProfile } from "@/lib/firebase/firestore"
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 
@@ -17,6 +16,7 @@ export default function SubscribePage() {
       console.log("[v0] Subscribe page - Loading creator:", creatorId)
 
       try {
+        const { getCreatorProfile } = await import("@/lib/firebase/firestore")
         const creatorData = await getCreatorProfile(creatorId)
         console.log("[v0] Subscribe page - Creator data:", creatorData)
 
